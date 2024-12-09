@@ -14,7 +14,12 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    PlayfairDisplay: require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
+    Roboto: require('../assets/fonts/Roboto-Regular.ttf'),
+    Poppins: require('../assets/fonts/Poppins-Regular.ttf'),
+    Lato: require('../assets/fonts/Lato-Regular.ttf'),
+    DancingScript: require('../assets/fonts/DancingScript-Regular.ttf'),
+    CormorantGaramond: require('../assets/fonts/CormorantGaramond-Regular.ttf'),
   });
 
   useEffect(() => {
@@ -29,8 +34,21 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack screenOptions={{
+        headerShown: false
+      }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(open)/forgot-password"
+          options={{
+            headerShown: true,
+            title: 'Forgot Password',
+          }} />
+        <Stack.Screen name="(open)/reset-password"
+          options={{
+            headerShown: true,
+            title: 'Reset Password',
+          }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
