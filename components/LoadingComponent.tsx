@@ -5,7 +5,7 @@ import { Colors } from '@/constants/Colors'
 
 // props
 export type LoadingComponentProps = {
-    loading: boolean
+    loading: boolean | undefined;
 }
 
 const LoadingComponent = ({ loading }: LoadingComponentProps) => {

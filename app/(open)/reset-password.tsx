@@ -4,9 +4,27 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Fonts } from '@/constants/Fonts';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../context/AuthContext';
+import { useSearchParams } from 'expo-router/build/hooks';
+import MessageContainer from '@/components/MessageContainer';
+import LoadingComponent from '@/components/LoadingComponent';
 
 const ResetPassword = () => {
+    const searchParams = useSearchParams();
+    const email = searchParams.get('email');
+    const otp = searchParams.get('otp');
+
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
+
+    const { authState, onResetPassword } = useAuth();
+    useEffect(() => {
+        if (authState?.authenticated) {
+            router.push('/(tabs)/home');
+        }
+    }, [authState?.authenticated, router]);
+
     const [focusedInput, setFocusedInput] = useState<string | null>(null);
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
@@ -14,8 +32,48 @@ const ResetPassword = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    const handleResetPassword = () => {
-        console.log('Password:', password);
+    const [messageObj, setMessageObj] = useState<{
+        message?: string;
+        type?: 'error' | 'success';
+    }>({});
+
+    const handleResetPassword = async () => {
+        
+        if (email === null || otp === null) {
+            setMessageObj({
+                message: 'Invalid reset link.',
+            });
+        } else if (!password || !confirmPassword) {
+            setMessageObj({
+                message: 'Please fill in all the fields.',
+            });
+        } else if (password !== confirmPassword) {
+            setMessageObj({
+                message: 'Passwords do not match.',
+            });
+        } else {
+            setMessageObj({
+                message: ''
+            });
+            setLoading(true);
+            const result = await onResetPassword!(email, otp, password);
+            if (result.error) {
+                setMessageObj({
+                    message: result.msg,
+                    type: 'error',
+                });
+                setLoading(false);
+            } else {
+                setMessageObj({
+                    message: 'Password reset successfully.',
+                    type: 'success',
+                });
+                setLoading(false);
+                setTimeout(() => {
+                    router.replace('/login');
+                }, 3000);
+            }
+        }
     };
 
     return (
@@ -54,6 +112,9 @@ const ResetPassword = () => {
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                 />
+
+                {/* Display error message */}
+                <MessageContainer message={messageObj.message} type={messageObj.type} />
                 <TouchableOpacity
                     style={[styles.button, { backgroundColor: colors.tint }]}
                     onPress={handleResetPassword}
@@ -67,6 +128,7 @@ const ResetPassword = () => {
                     <Text style={[styles.buttonText, { color: colors.background }]}>Cancel</Text>
                 </TouchableOpacity>
             </View>
+            <LoadingComponent loading={loading} />
         </SafeAreaView>
     )
 }

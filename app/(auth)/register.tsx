@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme.web';
@@ -6,9 +6,21 @@ import { Colors } from '@/constants/Colors';
 import { Fonts } from '@/constants/Fonts';
 import MessageContainer from '@/components/MessageContainer';
 import LoadingComponent from '@/components/LoadingComponent';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
+  const colors = Colors[useColorScheme() ?? 'light'];
+  const router = useRouter();
+
+  const { authState, onRegister } = useAuth();
+  useEffect(() => {
+    if (authState?.authenticated) {
+      router.push('/(tabs)/home');
+    }
+  }, [authState?.authenticated, router]);
+
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('')
@@ -17,14 +29,13 @@ const Register = () => {
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+
   const [messageObj, setMessageObj] = useState<{
     message?: string;
     type?: 'error' | 'success';
   }>({});
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     console.log('First Name:', firstName);
     console.log('Last Name:', lastName);
     console.log('Email:', email);
@@ -46,6 +57,25 @@ const Register = () => {
       setMessageObj({
         message: ''
       });
+      setLoading(true);
+      // Perform registration
+      const result = await onRegister!(email, password, firstName, lastName, phone)
+      if (result?.error) {
+        setMessageObj({
+          message: result.msg,
+          type: 'error',
+        });
+        setLoading(false);
+      } else {
+        setMessageObj({
+          message: 'Registration successful.',
+          type: 'success',
+        });
+        setLoading(false);
+
+        // Redirect to login page
+        router.push('/login');
+      }
     }
   };
 

@@ -1,4 +1,3 @@
-import { View, Text } from 'react-native'
 import { Tabs } from 'expo-router';
 import React from 'react'
 import { Platform } from 'react-native';
@@ -8,10 +7,10 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useAuth } from '../context/AuthContext';
 
 const AuthLayout = () => {
     const colorScheme = useColorScheme();
-
     return (
         <Tabs
             screenOptions={{

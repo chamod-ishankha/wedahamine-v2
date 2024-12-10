@@ -3,12 +3,22 @@ import { StyleSheet, Text, View, TextInput, TouchableOpacity, Platform, Activity
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Fonts } from '@/constants/Fonts';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MessageContainer from '@/components/MessageContainer';
 import LoadingComponent from '@/components/LoadingComponent';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+  const router = useRouter();
+
+  const { authState, onLogin } = useAuth();
+  useEffect(() => {
+    if (authState?.authenticated) {
+      router.push('/(tabs)/home');
+    }
+  }, [authState?.authenticated, router]);
+
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [email, setEmail] = useState('');
@@ -19,7 +29,7 @@ const Login = () => {
     type?: 'error' | 'success';
   }>({});
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     console.log('Email:', email);
     console.log('Password:', password);
 
@@ -32,6 +42,24 @@ const Login = () => {
       setMessageObj({
         message: ''
       });
+
+      setLoading(true);
+      // Perform login
+      const result = await onLogin!(email, password);
+      if (result?.error) {
+        setMessageObj({
+          message: result.msg,
+          type: 'error'
+        });
+        setLoading(false);
+      } else {
+        setMessageObj({
+          message: 'Login successful',
+          type: 'success'
+        });
+        setLoading(false);
+        router.push('/home');
+      }
     }
   };
 

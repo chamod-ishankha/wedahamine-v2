@@ -1,10 +1,11 @@
-import React, { useRef, useState } from 'react';
-import { StyleSheet, Text, View, FlatList, Image, Dimensions, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View, FlatList, Image, Dimensions, TouchableOpacity, Button, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Fonts } from '@/constants/Fonts';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useAuth } from './context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,6 +31,15 @@ const slides = [
 ];
 
 const Onboarding = () => {
+    const router = useRouter();
+    const { authState } = useAuth();
+
+    useEffect(() => {
+        if (authState?.authenticated) {
+            router.push('/(tabs)/home');
+        }
+    }, [authState?.authenticated, router]);
+
     const colorScheme = useColorScheme();
     const colors = Colors[colorScheme ?? 'light'];
     const flatListRef = useRef<FlatList>(null);
@@ -41,7 +51,7 @@ const Onboarding = () => {
     };
 
     const handleGetStarted = () => {
-        router.replace('/login');
+        router.push('/(auth)/login');
     };
 
     const nextSlide = () => {
@@ -76,6 +86,7 @@ const Onboarding = () => {
                 onScroll={handleScroll}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
+                style={Platform.OS !== 'web' ? { marginTop: -100 } : {}}
             />
             <View style={styles.footer}>
                 {/* Dots Indicator */}
@@ -115,13 +126,14 @@ const styles = StyleSheet.create({
         width,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
+        paddingTop: Platform.OS !== 'web' ? 20 : 0,
     },
     image: {
-        width: width * 1,
+        width: '100%',
         height: height * 0.8,
         resizeMode: 'cover',
         opacity: 0.5,
+        alignSelf: 'center',
     },
     title: {
         fontFamily: Fonts.primary.title,

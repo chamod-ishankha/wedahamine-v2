@@ -4,10 +4,22 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Fonts } from '@/constants/Fonts';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import MessageContainer from '@/components/MessageContainer';
+import { useAuth } from '../context/AuthContext';
+import LoadingComponent from '@/components/LoadingComponent';
 
 const ForgotPassword = () => {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const { authState, onForgotPassword, onVerifyOtp } = useAuth();
+  useEffect(() => {
+    if (authState?.authenticated) {
+      router.push('/(tabs)/home');
+    }
+  }, [authState?.authenticated, router]);
+
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(Array(6).fill('')); // OTP input array
@@ -43,30 +55,70 @@ const ForgotPassword = () => {
     return `${maskedUsername}@${maskedDomain}`;
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (email) {
       // isResendEnabled set MessageObj to resent OTP successfully & set messageObj again empty after 5 seconds
       if (isResendEnabled) {
-        setMessageObj({
-          message: 'OTP resent successfully.',
-          type: 'success',
-        });
-        setTimeout(() => {
+        // Call the forgot password API
+        setLoading(true);
+        const result = await onForgotPassword!(email);
+        if (result?.error) {
           setMessageObj({
-            message: '',
+            message: result.msg,
+            type: 'error',
           });
-        }, 5000);
+          setLoading(false);
+        } else {
+          // Mask the entered email and display the masked version
+          setEmailSent(maskEmail(email));
+          setIsOtpSent(true);
+          setIsResendEnabled(false);
+          setCountdown(59); // Reset countdown
+
+          setMessageObj({
+            message: 'OTP resent successfully!',
+            type: 'success',
+          });
+          setTimeout(() => {
+            setMessageObj({
+              message: '',
+            });
+          }, 5000);
+          setLoading(false);
+        }
       } else {
         setMessageObj({
           message: '',
         });
-      }
 
-      // Mask the entered email and display the masked version
-      setEmailSent(maskEmail(email));
-      setIsOtpSent(true);
-      setIsResendEnabled(false);
-      setCountdown(59); // Reset countdown
+        // Call the forgot password API
+        setLoading(true);
+        const result = await onForgotPassword!(email);
+        if (result?.error) {
+          setMessageObj({
+            message: result.msg,
+            type: 'error',
+          });
+          setLoading(false);
+        } else {
+          // Mask the entered email and display the masked version
+          setEmailSent(maskEmail(email));
+          setIsOtpSent(true);
+          setIsResendEnabled(false);
+          setCountdown(59); // Reset countdown
+
+          setMessageObj({
+            message: result?.data?.message,
+            type: 'success',
+          });
+          setTimeout(() => {
+            setMessageObj({
+              message: '',
+            });
+          }, 5000);
+          setLoading(false);
+        }
+      }
     } else {
       setMessageObj({
         message: 'Please enter your email.',
@@ -96,13 +148,27 @@ const ForgotPassword = () => {
     }
   };
 
-  const handleOtpSubmit = () => {
+  const handleOtpSubmit = async () => {
     if (otp.join('').length === 6) {
-      console.log('OTP Submitted:', otp.join(''))
-      console.log('OTP is correct!');
-      router.navigate('/reset-password');
-    } else {
-      console.log('OTP is incorrect!');
+      const otpValue = otp.join('');
+      // Call the verify OTP API
+      setLoading(true);
+      const result = await onVerifyOtp!(email, otpValue);
+      if (result?.error) {
+        setMessageObj({
+          message: result.msg,
+          type: 'error',
+        });
+        setLoading(false);
+      } else {
+        setMessageObj({
+          message: 'OTP verified successfully!',
+          type: 'success',
+        });
+        setLoading(false);
+        // Redirect to reset password page with email & otp
+        router.push(`/reset-password?email=${email}&otp=${otpValue}`);
+      }
     }
   };
 
@@ -189,6 +255,7 @@ const ForgotPassword = () => {
           </>
         )}
       </View>
+      <LoadingComponent loading={loading} />
     </SafeAreaView>
   );
 };
